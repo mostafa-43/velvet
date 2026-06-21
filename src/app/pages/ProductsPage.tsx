@@ -1,13 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
 import { Search, SlidersHorizontal, X, ChevronDown } from "lucide-react";
-import { products, brands, categories } from "../data/mockData";
+import { brandService } from '../services/brandService';
+import { categoryService } from '../services/categoryService';
+import { productService } from '../services/productService';
 import { ProductCard } from "../components/ProductCard";
 
-const ITEMS_PER_PAGE = 12;
-
 export function ProductsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "");
@@ -16,36 +16,63 @@ export function ProductsPage() {
   const [page, setPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const filtered = useMemo(() => {
-    let result = [...products];
+  const [brands, setBrands] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [productsData, setProductsData] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-    if (search) result = result.filter(p =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.brandName.toLowerCase().includes(search.toLowerCase()) ||
-      p.categoryName.toLowerCase().includes(search.toLowerCase())
-    );
+  useEffect(() => {
+    const ac = new AbortController();
+    brandService.getAll(ac.signal).then(data => {
+      if (!ac.signal.aborted) setBrands(data);
+    }).catch(() => {});
+    return () => ac.abort();
+  }, []);
 
-    if (selectedBrand) result = result.filter(p => p.brandId === selectedBrand);
-    if (selectedCategory) result = result.filter(p => {
-      const cat = categories.find(c => c.slug === selectedCategory);
-      return cat ? p.categoryId === cat.id : true;
-    });
+  useEffect(() => {
+    const ac = new AbortController();
+    categoryService.getAll(ac.signal).then(data => {
+      if (!ac.signal.aborted) setCategories(data);
+    }).catch(() => {});
+    return () => ac.abort();
+  }, []);
 
-    if (selectedFilter === "new") result = result.filter(p => p.isNew);
-    else if (selectedFilter === "trending") result = result.filter(p => p.isTrending);
-    else if (selectedFilter === "sale") result = result.filter(p => !!p.originalPrice);
-    else if (selectedFilter === "featured") result = result.filter(p => p.isFeatured);
-
-    if (sortBy === "price-asc") result.sort((a, b) => a.price - b.price);
-    else if (sortBy === "price-desc") result.sort((a, b) => b.price - a.price);
-    else if (sortBy === "rating") result.sort((a, b) => b.rating - a.rating);
-    else if (sortBy === "newest") result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
-
-    return result;
-  }, [search, selectedBrand, selectedCategory, selectedFilter, sortBy]);
-
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  useEffect(() => {
+    const ac = new AbortController();
+    (async () => {
+      setLoading(true);
+      try {
+        const params = {};
+        if (search) params.search = search;
+        if (selectedBrand) params.brandId = selectedBrand;
+        if (selectedCategory) {
+          const cat = categories.find(c => c.slug === selectedCategory);
+          if (cat) params.categoryId = cat.id;
+        }
+        if (selectedFilter) params.filter = selectedFilter;
+        if (sortBy !== 'featured') params.sort = sortBy;
+        params.page = page;
+        params.limit = 12;
+        const result = await productService.getAll(params, ac.signal);
+        if (!ac.signal.aborted) {
+          setProductsData(result.products);
+          setTotal(result.total);
+          setTotalPages(result.totalPages);
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setProductsData([]);
+          setTotal(0);
+          setTotalPages(0);
+        }
+      } finally {
+        if (!ac.signal.aborted) setLoading(false);
+      }
+    })();
+    return () => ac.abort();
+  }, [search, selectedBrand, selectedCategory, selectedFilter, sortBy, page]);
 
   const clearFilters = () => {
     setSearch(""); setSelectedBrand(""); setSelectedCategory("");
@@ -63,7 +90,7 @@ export function ProductsPage() {
           <h1 className="text-white mb-2" style={{ fontFamily: "'Fredoka One', cursive", fontSize: "clamp(2.5rem, 5vw, 4rem)" }}>
             All Products
           </h1>
-          <p className="text-white/60 text-sm">{filtered.length} products found</p>
+          <p className="text-white/60 text-sm">{total} products found</p>
         </div>
       </div>
 
@@ -154,7 +181,11 @@ export function ProductsPage() {
         </div>
 
         {/* Results */}
-        {paginated.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-24 text-gray-400">
+            <p className="font-semibold">Loading products...</p>
+          </div>
+        ) : productsData.length === 0 ? (
           <div className="text-center py-24 text-gray-400">
             <p className="text-5xl mb-4">🔍</p>
             <p className="font-semibold text-lg">No products match your filters.</p>
@@ -163,7 +194,7 @@ export function ProductsPage() {
         ) : (
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-              {paginated.map(p => (
+              {productsData.map(p => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>

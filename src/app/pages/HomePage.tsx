@@ -3,12 +3,18 @@ import { Link } from "react-router";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { ChevronLeft, ChevronRight, Play, ArrowRight, Star } from "lucide-react";
-import { heroBanners, brands, products, categories, videos } from "../data/mockData";
+import { brandService } from '../services/brandService';
+import { categoryService } from '../services/categoryService';
+import { productService } from '../services/productService';
+import { bannerService } from '../services/bannerService';
+import { videoService } from '../services/videoService';
+import { newsletterService } from '../services/newsletterService';
 import { ProductCard } from "../components/ProductCard";
 import { ImageWithFallback } from "../components/ImageWithFallback";
 
 // ─── Hero Slider ────────────────────────────────────────────────────────────
 function HeroSlider() {
+  const [banners, setBanners] = useState([]);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [Autoplay({ delay: 5000 })]);
   const [selected, setSelected] = useState(0);
 
@@ -20,11 +26,19 @@ function HeroSlider() {
     emblaApi.on("select", () => setSelected(emblaApi.selectedScrollSnap()));
   }, [emblaApi]);
 
+  useEffect(() => {
+    const ac = new AbortController();
+    bannerService.getActive(ac.signal).then(data => {
+      if (!ac.signal.aborted) setBanners(data);
+    }).catch(() => {});
+    return () => ac.abort();
+  }, []);
+
   return (
     <section className="relative w-full overflow-hidden" style={{ height: "clamp(420px, 60vw, 700px)" }}>
       <div ref={emblaRef} className="overflow-hidden h-full">
         <div className="flex h-full">
-          {heroBanners.map(banner => (
+          {banners.map(banner => (
             <div key={banner.id} className="flex-[0_0_100%] relative h-full">
               <ImageWithFallback
                 src={banner.image}
@@ -76,7 +90,7 @@ function HeroSlider() {
 
       {/* Dots */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-        {heroBanners.map((_, i) => (
+        {banners.map((_, i) => (
           <button
             key={i}
             onClick={() => emblaApi?.scrollTo(i)}
@@ -91,6 +105,16 @@ function HeroSlider() {
 
 // ─── Category Strip ──────────────────────────────────────────────────────────
 function CategoryStrip() {
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    categoryService.getAll(ac.signal).then(data => {
+      if (!ac.signal.aborted) setCategories(data);
+    }).catch(() => {});
+    return () => ac.abort();
+  }, []);
+
   return (
     <section className="bg-white border-b border-gray-100 py-6">
       <div className="max-w-7xl mx-auto px-4 lg:px-8">
@@ -118,7 +142,15 @@ function CategoryStrip() {
 
 // ─── Featured Brands ─────────────────────────────────────────────────────────
 function FeaturedBrands() {
-  const featured = brands.filter(b => b.featured);
+  const [brands, setBrands] = useState([]);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    brandService.getFeatured(ac.signal).then(data => {
+      if (!ac.signal.aborted) setBrands(data);
+    }).catch(() => {});
+    return () => ac.abort();
+  }, []);
 
   return (
     <section className="py-16 lg:py-20 bg-gray-50">
@@ -136,7 +168,7 @@ function FeaturedBrands() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
-          {featured.map((brand, i) => (
+          {brands.map((brand, i) => (
             <Link
               key={brand.id}
               to={`/brands/${brand.slug}`}
@@ -177,7 +209,15 @@ function FeaturedBrands() {
 
 // ─── Trending Products ────────────────────────────────────────────────────────
 function TrendingProducts() {
-  const trending = products.filter(p => p.isTrending).slice(0, 6);
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    productService.getTrending(ac.signal).then(data => {
+      if (!ac.signal.aborted) setProducts(data);
+    }).catch(() => {});
+    return () => ac.abort();
+  }, []);
 
   return (
     <section className="py-16 lg:py-20 bg-white">
@@ -195,7 +235,7 @@ function TrendingProducts() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {trending.map(p => (
+          {products.map(p => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
@@ -206,11 +246,19 @@ function TrendingProducts() {
 
 // ─── Brand Showcase (ZURU-style full-bleed sections) ──────────────────────────
 function BrandShowcase() {
-  const showcaseBrands = brands.slice(0, 3);
+  const [brands, setBrands] = useState([]);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    brandService.getAll(ac.signal).then(data => {
+      if (!ac.signal.aborted) setBrands(data.slice(0, 3));
+    }).catch(() => {});
+    return () => ac.abort();
+  }, []);
 
   return (
     <section className="space-y-0">
-      {showcaseBrands.map((brand, i) => (
+      {brands.map((brand, i) => (
         <div
           key={brand.id}
           className="relative overflow-hidden"
@@ -257,7 +305,15 @@ function BrandShowcase() {
 
 // ─── New Releases ─────────────────────────────────────────────────────────────
 function NewReleases() {
-  const newProducts = products.filter(p => p.isNew).slice(0, 4);
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    productService.getNew(ac.signal).then(data => {
+      if (!ac.signal.aborted) setProducts(data);
+    }).catch(() => {});
+    return () => ac.abort();
+  }, []);
 
   return (
     <section className="py-16 lg:py-20" style={{ backgroundColor: "#0d1b4b" }}>
@@ -275,7 +331,7 @@ function NewReleases() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {newProducts.map(product => (
+          {products.map(product => (
             <Link
               key={product.id}
               to={`/products/${product.id}`}
@@ -306,7 +362,21 @@ function NewReleases() {
 
 // ─── Video Showcase ───────────────────────────────────────────────────────────
 function VideoShowcase() {
-  const [activeVideo, setActiveVideo] = useState(videos[0]);
+  const [videos, setVideos] = useState([]);
+  const [activeVideo, setActiveVideo] = useState(null);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    videoService.getAll(ac.signal).then(data => {
+      if (!ac.signal.aborted) {
+        setVideos(data);
+        if (data.length > 0) setActiveVideo(data[0]);
+      }
+    }).catch(() => {});
+    return () => ac.abort();
+  }, []);
+
+  if (!activeVideo) return null;
 
   return (
     <section className="py-16 lg:py-20 bg-gray-50">
@@ -431,7 +501,15 @@ function NewsletterSection() {
           </div>
         ) : (
           <form
-            onSubmit={e => { e.preventDefault(); if (email) setSubmitted(true); }}
+            onSubmit={async e => {
+              e.preventDefault();
+              if (email) {
+                try {
+                  await newsletterService.subscribe(email);
+                  setSubmitted(true);
+                } catch {}
+              }
+            }}
             className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
           >
             <input

@@ -1,18 +1,51 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { Star, ShoppingCart, Heart, ArrowLeft, Play, Check, ChevronLeft, ChevronRight } from "lucide-react";
-import { products, brands } from "../data/mockData";
+import { productService } from '../services/productService';
+import { brandService } from '../services/brandService';
 import { ProductCard } from "../components/ProductCard";
 import { ImageWithFallback } from "../components/ImageWithFallback";
 
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const product = products.find(p => p.id === id);
+  const [product, setProduct] = useState(null);
+  const [brand, setBrand] = useState(null);
+  const [related, setRelated] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
-  if (!product) {
+  useEffect(() => {
+    const ac = new AbortController();
+    (async () => {
+      setLoading(true);
+      try {
+        const p = await productService.getById(id, ac.signal);
+        if (ac.signal.aborted) return;
+        setProduct(p);
+        setSelectedImage(0);
+
+        if (p.brandId) {
+          const [allBrands, result] = await Promise.all([
+            brandService.getAll(ac.signal),
+            productService.getAll({ brandId: p.brandId }, ac.signal),
+          ]);
+          if (ac.signal.aborted) return;
+          const foundBrand = allBrands.find(b => b.id === p.brandId);
+          setBrand(foundBrand || null);
+          setRelated((result.products || []).filter(rp => rp.id !== p.id).slice(0, 4));
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') setProduct(null);
+      } finally {
+        if (!ac.signal.aborted) setLoading(false);
+      }
+    })();
+    return () => ac.abort();
+  }, [id]);
+
+  if (!product && !loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <p className="text-5xl">😕</p>
@@ -24,8 +57,8 @@ export function ProductDetailPage() {
     );
   }
 
-  const brand = brands.find(b => b.id === product.brandId);
-  const related = products.filter(p => p.brandId === product.brandId && p.id !== product.id).slice(0, 4);
+  if (!product) return null;
+
   const allImages = [product.image, ...product.images.filter(img => img !== product.image)];
   const discount = product.originalPrice
     ? Math.round((1 - product.price / product.originalPrice) * 100)

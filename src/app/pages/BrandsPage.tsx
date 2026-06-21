@@ -1,11 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { Search, ArrowRight } from "lucide-react";
-import { brands } from "../data/mockData";
+import { brandService } from '../services/brandService';
 import { ImageWithFallback } from "../components/ImageWithFallback";
 
 export function BrandsPage() {
+  const [brands, setBrands] = useState([]);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const ac = new AbortController();
+    brandService.getAll(ac.signal).then(data => {
+      if (!ac.signal.aborted) setBrands(data);
+    }).catch(() => {});
+    return () => ac.abort();
+  }, []);
 
   const filtered = brands.filter(b =>
     b.name.toLowerCase().includes(search.toLowerCase()) ||

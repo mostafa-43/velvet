@@ -1,16 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { Search, Menu, X, ChevronDown, Heart } from "lucide-react";
 import logoImg from "../../imports/logo.jpeg";
 import { ImageWithFallback } from "./ImageWithFallback";
-import { brands } from "../data/mockData";
+import { brandService } from '../services/brandService';
 
 export function Navbar() {
+  const [brands, setBrands] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [brandsOpen, setBrandsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const ac = new AbortController();
+    brandService.getAll(ac.signal).then(data => {
+      if (!ac.signal.aborted) setBrands(data);
+    }).catch(() => {});
+    return () => ac.abort();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,4 +159,3 @@ export function Navbar() {
     </>
   );
 }
-

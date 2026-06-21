@@ -1,0 +1,158 @@
+CREATE DATABASE IF NOT EXISTS velvet_kids;
+USE velvet_kids;
+
+-- Brands
+CREATE TABLE IF NOT EXISTS brands (
+  id VARCHAR(36) PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) NOT NULL UNIQUE,
+  tagline VARCHAR(200) NOT NULL DEFAULT '',
+  description TEXT,
+  color VARCHAR(7) NOT NULL DEFAULT '#000000',
+  bg_color VARCHAR(7) NOT NULL DEFAULT '#f0f0f0',
+  logo VARCHAR(500) DEFAULT NULL,
+  hero_image VARCHAR(500) DEFAULT NULL,
+  product_count INT NOT NULL DEFAULT 0,
+  featured TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_brands_slug (slug),
+  INDEX idx_brands_featured (featured)
+);
+
+-- Categories
+CREATE TABLE IF NOT EXISTS categories (
+  id VARCHAR(36) PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) NOT NULL UNIQUE,
+  icon VARCHAR(10) NOT NULL DEFAULT '',
+  color VARCHAR(7) NOT NULL DEFAULT '#000000',
+  product_count INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_categories_slug (slug)
+);
+
+-- Products
+CREATE TABLE IF NOT EXISTS products (
+  id VARCHAR(36) PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  brand_id VARCHAR(36) NOT NULL,
+  category_id VARCHAR(36) NOT NULL,
+  price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+  original_price DECIMAL(10, 2) DEFAULT NULL,
+  description TEXT,
+  features JSON DEFAULT NULL,
+  age_range VARCHAR(20) NOT NULL DEFAULT '3+',
+  rating DECIMAL(3, 2) NOT NULL DEFAULT 0.00,
+  review_count INT NOT NULL DEFAULT 0,
+  is_new TINYINT(1) NOT NULL DEFAULT 0,
+  is_trending TINYINT(1) NOT NULL DEFAULT 0,
+  is_featured TINYINT(1) NOT NULL DEFAULT 0,
+  video_url VARCHAR(500) DEFAULT NULL,
+  in_stock TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_products_brand (brand_id),
+  INDEX idx_products_category (category_id),
+  INDEX idx_products_price (price),
+  INDEX idx_products_rating (rating),
+  INDEX idx_products_new (is_new),
+  INDEX idx_products_trending (is_trending),
+  INDEX idx_products_featured (is_featured),
+  INDEX idx_products_stock (in_stock),
+  FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE CASCADE,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+);
+
+-- Product Images
+CREATE TABLE IF NOT EXISTS product_images (
+  id VARCHAR(36) PRIMARY KEY,
+  product_id VARCHAR(36) NOT NULL,
+  image_url VARCHAR(500) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_product_images_product (product_id),
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+-- Banners (Hero Slider)
+CREATE TABLE IF NOT EXISTS banners (
+  id VARCHAR(36) PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  subtitle VARCHAR(300) DEFAULT NULL,
+  cta_text VARCHAR(100) NOT NULL DEFAULT 'Shop Now',
+  cta_link VARCHAR(500) NOT NULL DEFAULT '/products',
+  image VARCHAR(500) DEFAULT NULL,
+  bg_color VARCHAR(7) NOT NULL DEFAULT '#0d1b4b',
+  text_color VARCHAR(7) NOT NULL DEFAULT '#ffffff',
+  sort_order INT NOT NULL DEFAULT 0,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Videos
+CREATE TABLE IF NOT EXISTS videos (
+  id VARCHAR(36) PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  brand VARCHAR(100) NOT NULL DEFAULT '',
+  thumbnail VARCHAR(500) DEFAULT NULL,
+  duration VARCHAR(10) NOT NULL DEFAULT '0:00',
+  views VARCHAR(20) NOT NULL DEFAULT '0',
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Homepage Sections
+CREATE TABLE IF NOT EXISTS homepage_sections (
+  id VARCHAR(36) PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description VARCHAR(300) DEFAULT NULL,
+  enabled TINYINT(1) NOT NULL DEFAULT 1,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Users (Admin)
+CREATE TABLE IF NOT EXISTS users (
+  id VARCHAR(36) PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(200) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('admin', 'manager') NOT NULL DEFAULT 'admin',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_users_email (email)
+);
+
+-- Contact Messages
+CREATE TABLE IF NOT EXISTS contact_messages (
+  id VARCHAR(36) PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(200) NOT NULL,
+  subject VARCHAR(200) DEFAULT NULL,
+  message TEXT NOT NULL,
+  is_read TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_contact_read (is_read)
+);
+
+-- Newsletter Subscribers
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+  id VARCHAR(36) PRIMARY KEY,
+  email VARCHAR(200) NOT NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Site Settings
+CREATE TABLE IF NOT EXISTS site_settings (
+  id VARCHAR(36) PRIMARY KEY,
+  setting_key VARCHAR(100) NOT NULL UNIQUE,
+  setting_value TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_settings_key (setting_key)
+);

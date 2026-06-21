@@ -1,15 +1,42 @@
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import type { CSSProperties } from "react";
 import { ArrowRight, ArrowLeft } from "lucide-react";
-import { brands, products } from "../data/mockData";
+import { brandService } from '../services/brandService';
+import { productService } from '../services/productService';
 import { ProductCard } from "../components/ProductCard";
 import { ImageWithFallback } from "../components/ImageWithFallback";
 
 export function BrandDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const brand = brands.find(b => b.slug === slug);
+  const [brand, setBrand] = useState(null);
+  const [brandProducts, setBrandProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  if (!brand) {
+  useEffect(() => {
+    const ac = new AbortController();
+    (async () => {
+      try {
+        const allBrands = await brandService.getAll(ac.signal);
+        if (ac.signal.aborted) return;
+        const found = allBrands.find(b => b.slug === slug);
+        if (found) {
+          setBrand(found);
+          const result = await productService.getAll({ brandId: found.id }, ac.signal);
+          if (!ac.signal.aborted) setBrandProducts(result.products || []);
+        } else {
+          setBrand(null);
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') setBrand(null);
+      } finally {
+        if (!ac.signal.aborted) setLoading(false);
+      }
+    })();
+    return () => ac.abort();
+  }, [slug]);
+
+  if (!brand && !loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <p className="text-5xl">😕</p>
@@ -21,7 +48,7 @@ export function BrandDetailPage() {
     );
   }
 
-  const brandProducts = products.filter(p => p.brandId === brand.id);
+  if (!brand) return null;
 
   return (
     <div>

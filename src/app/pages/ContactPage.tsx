@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { Mail, Phone, MapPin, Clock, Send, Check } from "lucide-react";
+import { contactService } from '../services/contactService';
 
 export function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    try {
+      await contactService.submit(form);
+      setSubmitted(true);
+    } catch {}
   };
 
   return (
