@@ -25,7 +25,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   if (isAdmin) return <>{children}</>;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
@@ -56,17 +56,17 @@ function AppRoutes() {
 function NotFound() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-center px-4">
-      <p className="text-6xl">🧸</p>
       <h1
-        className="text-[#0d1b4b]"
-        style={{ fontFamily: "'Fredoka One', cursive", fontSize: "clamp(3rem, 8vw, 6rem)" }}
+        className="text-foreground"
+        style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "clamp(3rem, 8vw, 6rem)", fontWeight: 300 }}
       >
-        Oops!
+        404
       </h1>
-      <p className="text-gray-500 text-lg max-w-sm">This page seems to have wandered off to play somewhere else.</p>
+      <p className="text-muted-foreground text-lg max-w-sm">This page doesn't exist.</p>
       <a
         href="/"
-        className="mt-2 bg-[#e8174b] hover:bg-red-600 text-white font-bold px-7 py-3 rounded-full transition-colors text-sm"
+        className="mt-2 border border-foreground text-foreground px-7 py-3 rounded-full transition-colors text-sm font-normal"
+        style={{ borderRadius: "30px" }}
       >
         Back to Home
       </a>
